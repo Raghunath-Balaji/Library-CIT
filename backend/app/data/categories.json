@@ -1,0 +1,8 @@
+[
+  { "id": "CS", "name": "Computer Science", "color": "#38bdf8", "shelfId": "SH-CS-1", "aisle": "Bays 1 & 2 • North Wall", "description": "Algorithms, Systems, AI, and Cybersecurity" },
+  { "id": "EC", "name": "Electronics", "color": "#fb923c", "shelfId": "SH-EC-1", "aisle": "Bay 3 • North Wall", "description": "Microcircuits, DSP, and Embedded Systems" },
+  { "id": "ME", "name": "Mechanical Engineering", "color": "#34d399", "shelfId": "SH-ME-1", "aisle": "Bay 4 • North Wall", "description": "Thermodynamics, Robotics, and CAD/CAM" },
+  { "id": "PH", "name": "Physics & Math", "color": "#a855f7", "shelfId": "SH-PH-1", "aisle": "Bay 5 • North Wall", "description": "Quantum Mechanics, Optics, and Applied Math" },
+  { "id": "CE", "name": "Civil & Structures", "color": "#facc15", "shelfId": "SH-CE-1", "aisle": "Bay 6 • North Wall", "description": "Structural Analysis, Concrete, and Surveying" },
+  { "id": "REF", "name": "General Reference", "color": "#fb7185", "shelfId": "SH-REF-1", "aisle": "Bay 7 • North Wall", "description": "Engineering Handbooks, Standards, and Journals" }
+]

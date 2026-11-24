@@ -1,0 +1,292 @@
+[
+  {
+    "id": "LIB1:CS01-1",
+    "title": "Introduction to Algorithms (CLRS)",
+    "author": "Cormen, Leiserson, Rivest, Stein",
+    "category": "Computer Science",
+    "shelfId": "SH-CS-1",
+    "row": 1,
+    "status": "on_shelf",
+    "description": "Foundational textbook on algorithm design, asymptotics, and graph theory."
+  },
+  {
+    "id": "LIB1:CS01-2",
+    "title": "Data Structures in C++",
+    "author": "Mark Allen Weiss",
+    "category": "Computer Science",
+    "shelfId": "SH-CS-1",
+    "row": 1,
+    "status": "on_shelf",
+    "description": "Trees, heaps, balancing algorithms, and amortized complexity."
+  },
+  {
+    "id": "LIB1:CS01-3",
+    "title": "The Art of Computer Programming, Vol 1",
+    "author": "Donald E. Knuth",
+    "category": "Computer Science",
+    "shelfId": "SH-CS-1",
+    "row": 2,
+    "status": "on_shelf",
+    "description": "Fundamental algorithms, information structures, and linear lists."
+  },
+  {
+    "id": "LIB1:CS01-4",
+    "title": "Grokking Algorithms",
+    "author": "Aditya Bhargava",
+    "category": "Computer Science",
+    "shelfId": "SH-CS-1",
+    "row": 3,
+    "status": "on_shelf",
+    "description": "Illustrated guide to practical algorithms for programmers."
+  },
+  {
+    "id": "LIB1:CS02-1",
+    "title": "Operating System Concepts",
+    "author": "Silberschatz, Galvin, Gagne",
+    "category": "Computer Science",
+    "shelfId": "SH-CS-2",
+    "row": 1,
+    "status": "on_shelf",
+    "description": "Kernel architecture, process scheduling, concurrency, and virtual memory."
+  },
+  {
+    "id": "LIB1:CS02-2",
+    "title": "Artificial Intelligence: A Modern Approach",
+    "author": "Stuart Russell, Peter Norvig",
+    "category": "Computer Science",
+    "shelfId": "SH-CS-2",
+    "row": 2,
+    "status": "on_shelf",
+    "description": "Standard AI textbook covering search, logic, and deep reinforcement learning."
+  },
+  {
+    "id": "LIB1:CS02-3",
+    "title": "Deep Learning with Python",
+    "author": "François Chollet",
+    "category": "Computer Science",
+    "shelfId": "SH-CS-2",
+    "row": 3,
+    "status": "on_shelf",
+    "description": "Practical neural network design using Keras and PyTorch."
+  },
+  {
+    "id": "LIB1:CS02-4",
+    "title": "Computer Networking: A Top-Down Approach",
+    "author": "Jim Kurose, Keith Ross",
+    "category": "Computer Science",
+    "shelfId": "SH-CS-2",
+    "row": 1,
+    "status": "on_shelf",
+    "description": "Application layer, TCP/IP congestion control, and routing architectures."
+  },
+  {
+    "id": "LIB1:CS02-5",
+    "title": "Cryptography and Network Security",
+    "author": "William Stallings",
+    "category": "Computer Science",
+    "shelfId": "SH-CS-2",
+    "row": 2,
+    "status": "on_shelf",
+    "description": "Symmetric ciphers, public-key encryption, and zero-trust security."
+  },
+  {
+    "id": "LIB1:EC01-1",
+    "title": "Microelectronic Circuits (8th Ed)",
+    "author": "Adel S. Sedra, Kenneth C. Smith",
+    "category": "Electronics",
+    "shelfId": "SH-EC-1",
+    "row": 1,
+    "status": "on_shelf",
+    "description": "MOSFETs, BJTs, differential amplifiers, and frequency response analysis."
+  },
+  {
+    "id": "LIB1:EC01-2",
+    "title": "Electronic Principles",
+    "author": "Albert Malvino, David Bates",
+    "category": "Electronics",
+    "shelfId": "SH-EC-1",
+    "row": 2,
+    "status": "on_shelf",
+    "description": "Semiconductor physics, diode rectifiers, and transistor biasing."
+  },
+  {
+    "id": "LIB1:EC01-3",
+    "title": "Signals and Systems",
+    "author": "Alan V. Oppenheim, Alan S. Willsky",
+    "category": "Electronics",
+    "shelfId": "SH-EC-1",
+    "row": 1,
+    "status": "on_shelf",
+    "description": "LTI systems, Fourier analysis, Laplace and Z-transforms."
+  },
+  {
+    "id": "LIB1:EC01-4",
+    "title": "Digital Signal Processing: Principles & Applications",
+    "author": "John G. Proakis, Dimitris G. Manolakis",
+    "category": "Electronics",
+    "shelfId": "SH-EC-1",
+    "row": 2,
+    "status": "on_shelf",
+    "description": "Discrete Fourier transforms, FFT algorithms, and FIR/IIR filter design."
+  },
+  {
+    "id": "LIB1:EC01-5",
+    "title": "CMOS VLSI Design: A Circuits and Systems Perspective",
+    "author": "Neil Weste, David Harris",
+    "category": "Electronics",
+    "shelfId": "SH-EC-1",
+    "row": 3,
+    "status": "on_shelf",
+    "description": "Silicon layout rules, propagation delay estimation, and CMOS clocking."
+  },
+  {
+    "id": "LIB1:ME01-1",
+    "title": "Engineering Thermodynamics (6th Ed)",
+    "author": "P.K. Nag",
+    "category": "Mechanical Engineering",
+    "shelfId": "SH-ME-1",
+    "row": 1,
+    "status": "on_shelf",
+    "description": "First and second laws, exergy analysis, and gas turbine power cycles."
+  },
+  {
+    "id": "LIB1:ME01-2",
+    "title": "Fundamentals of Fluid Mechanics",
+    "author": "Munson, Young, Okiishi",
+    "category": "Mechanical Engineering",
+    "shelfId": "SH-ME-1",
+    "row": 2,
+    "status": "on_shelf",
+    "description": "Navier-Stokes equations, boundary layer theory, and pipe flow losses."
+  },
+  {
+    "id": "LIB1:ME01-3",
+    "title": "Introduction to Robotics: Mechanics & Control",
+    "author": "John J. Craig",
+    "category": "Mechanical Engineering",
+    "shelfId": "SH-ME-1",
+    "row": 1,
+    "status": "on_shelf",
+    "description": "Forward & inverse kinematics, Jacobians, and robot trajectory planning."
+  },
+  {
+    "id": "LIB1:ME01-4",
+    "title": "Automation, Production Systems & CIM",
+    "author": "Mikell P. Groover",
+    "category": "Mechanical Engineering",
+    "shelfId": "SH-ME-1",
+    "row": 2,
+    "status": "on_shelf",
+    "description": "CNC machining, robotic workcells, and flexible manufacturing systems."
+  },
+  {
+    "id": "LIB1:ME01-5",
+    "title": "Shigley's Mechanical Engineering Design",
+    "author": "Richard Budynas, Keith Nisbett",
+    "category": "Mechanical Engineering",
+    "shelfId": "SH-ME-1",
+    "row": 3,
+    "status": "on_shelf",
+    "description": "Fatigue failure criteria, shafts, gears, bearings, and bolted joints."
+  },
+  {
+    "id": "LIB1:PH01-1",
+    "title": "Concepts of Modern Physics",
+    "author": "Arthur Beiser",
+    "category": "Physics & Math",
+    "shelfId": "SH-PH-1",
+    "row": 1,
+    "status": "on_shelf",
+    "description": "Special relativity, photoelectric effect, and Schrödinger wave equation."
+  },
+  {
+    "id": "LIB1:PH01-2",
+    "title": "Optics (5th Ed)",
+    "author": "Eugene Hecht",
+    "category": "Physics & Math",
+    "shelfId": "SH-PH-1",
+    "row": 2,
+    "status": "on_shelf",
+    "description": "Wave propagation, diffraction gratings, lasers, and polarization."
+  },
+  {
+    "id": "LIB1:PH01-3",
+    "title": "Advanced Engineering Mathematics",
+    "author": "Erwin Kreyszig",
+    "category": "Physics & Math",
+    "shelfId": "SH-PH-1",
+    "row": 1,
+    "status": "on_shelf",
+    "description": "ODEs, PDEs, vector calculus, complex analysis, and numerical series."
+  },
+  {
+    "id": "LIB1:PH01-4",
+    "title": "Linear Algebra and Its Applications",
+    "author": "Gilbert Strang",
+    "category": "Physics & Math",
+    "shelfId": "SH-PH-1",
+    "row": 2,
+    "status": "on_shelf",
+    "description": "Eigendecomposition, singular value decomposition, and vector spaces."
+  },
+  {
+    "id": "LIB1:CE01-1",
+    "title": "Structural Analysis",
+    "author": "Russell C. Hibbeler",
+    "category": "Civil & Structures",
+    "shelfId": "SH-CE-1",
+    "row": 1,
+    "status": "on_shelf",
+    "description": "Trusses, moment distribution method, and slope deflection analysis."
+  },
+  {
+    "id": "LIB1:CE01-2",
+    "title": "Surveying and Levelling",
+    "author": "N.N. Basak",
+    "category": "Civil & Structures",
+    "shelfId": "SH-CE-1",
+    "row": 2,
+    "status": "on_shelf",
+    "description": "Theodolite traverse, total station triangulation, and contour mapping."
+  },
+  {
+    "id": "LIB1:CE01-3",
+    "title": "Design of Reinforced Concrete Structures",
+    "author": "S. Ramamrutham",
+    "category": "Civil & Structures",
+    "shelfId": "SH-CE-1",
+    "row": 3,
+    "status": "on_shelf",
+    "description": "Limit state design of beams, columns, footings, and slabs."
+  },
+  {
+    "id": "LIB1:REF01-1",
+    "title": "Marks' Standard Handbook for Mechanical Engineers",
+    "author": "Eugene Avallone, Theodore Baumeister",
+    "category": "General Reference",
+    "shelfId": "SH-REF-1",
+    "row": 1,
+    "status": "on_shelf",
+    "description": "Comprehensive reference tables, metallurgy, thermodynamics, and machine design."
+  },
+  {
+    "id": "LIB1:REF01-2",
+    "title": "CRC Handbook of Chemistry and Physics",
+    "author": "John R. Rumble",
+    "category": "General Reference",
+    "shelfId": "SH-REF-1",
+    "row": 2,
+    "status": "on_shelf",
+    "description": "Physical constants, chemical thermodynamic data, and isotope tables."
+  },
+  {
+    "id": "LIB1:REF01-3",
+    "title": "IEEE Transactions on Neural Networks (Vol 35)",
+    "author": "IEEE Computational Intelligence Society",
+    "category": "General Reference",
+    "shelfId": "SH-REF-1",
+    "row": 3,
+    "status": "on_shelf",
+    "description": "Peer-reviewed research papers on deep learning architectures and hardware acceleration."
+  }
+]
