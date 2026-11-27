@@ -1,65 +1,79 @@
-import { Book } from '../types';
+import {
+  Book,
+  ActiveRequest,
+  StudentLoan,
+  BookHistoryEntry,
+  BookOwner,
+  ILendingRepository
+} from '../types';
+import { APP_CONFIG } from '../config/env';
 import { LibraryApiService } from './api';
-
-export interface LendingRequest {
-  id: string; // e.g. REQ-101
-  bookId: string;
-  bookTitle: string;
-  bookAuthor: string;
-  category: string;
-  studentId: string;
-  studentName: string;
-  requestDate: string;
-  status: 'pending' | 'approved' | 'rejected' | 'returned';
-  billId?: string;
-  dueDate?: string;
-}
-
-export interface BillReceipt {
-  billId: string; // e.g. BILL-2026-0042
-  requestId: string;
-  bookId: string;
-  bookTitle: string;
-  bookAuthor: string;
-  category: string;
-  studentId: string;
-  studentName: string;
-  issueDate: string;
-  dueDate: string;
-  lateFeePerDay: string;
-  status: 'active' | 'returned';
-}
+import { AuthService } from './authService';
+import { FirestoreLendingRepository } from './firestoreAdapter';
 
 type LendingListener = () => void;
 
-class LendingManager {
-  private requests: LendingRequest[] = [];
-  private bills: BillReceipt[] = [];
+/**
+ * Async Local Mock implementation of ILendingRepository modeling Cloud Firestore
+ * collections (`activeRequests`, `loans`) and transactional custody checks 1:1.
+ */
+class LocalLendingRepository implements ILendingRepository {
+  private activeRequests: ActiveRequest[] = [];
+  private studentLoans: StudentLoan[] = [];
   private nextReqId = 1001;
-  private nextBillId = 5001;
+  private nextLoanId = 5001;
   private listeners: Set<LendingListener> = new Set();
 
   constructor() {
-    // Seed sample loan history in collections without pre-approving active shelf books
-    this.bills = [
+    // Seed sample loan history so STU-9921 immediately sees past returned books
+    this.studentLoans = [
       {
-        billId: 'BILL-2026-4990',
+        loanId: 'LOAN-4990',
         requestId: 'REQ-990',
         bookId: 'LIB1:CS03-1',
         bookTitle: 'Database System Concepts',
         bookAuthor: 'Silberschatz, Korth, Sudarshan',
         category: 'Computer Science',
+        shelfId: 'SH-CS-3',
         studentId: 'STU-9921',
-        studentName: 'Raghu (Computer Science)',
-        issueDate: '2026-11-10',
-        dueDate: 'Nov 24, 2026',
-        lateFeePerDay: '$1.00',
-        status: 'returned'
+        studentName: 'Raghu',
+        issueDate: '2026-11-01',
+        dueDate: 'Nov 15, 2026',
+        status: 'returned',
+        returnedDate: '2026-11-14',
+        returnApprovedBy: 'Dr. Rao (Head Librarian)',
+        lateFeePerDay: '$1.00'
+      },
+      {
+        loanId: 'LOAN-4985',
+        requestId: 'REQ-985',
+        bookId: 'LIB1:EC01-2',
+        bookTitle: 'Microelectronic Circuits',
+        bookAuthor: 'Sedra & Smith',
+        category: 'Electronics',
+        shelfId: 'SH-EC-1',
+        studentId: 'STU-9921',
+        studentName: 'Raghu',
+        issueDate: '2026-10-10',
+        dueDate: 'Oct 24, 2026',
+        status: 'returned',
+        returnedDate: '2026-10-22',
+        returnApprovedBy: 'Dr. Rao (Head Librarian)',
+        lateFeePerDay: '$1.00'
       }
     ];
 
-    // Start with empty active requests so books like LIB1:CS01-1 are fresh and available to borrow
-    this.requests = [];
+    this.activeRequests = [];
+  }
+
+  private resolveStudentIdentity(studentId?: string, studentName?: string) {
+    const current = AuthService.getCurrentUser();
+    return {
+      studentId: studentId || current?.studentId || 'STU-9921',
+      studentName:
+        studentName ||
+        (current ? `${current.name} (${current.department})` : 'Raghu (Computer Science & Eng)')
+    };
   }
 
   subscribe(listener: LendingListener): () => void {
@@ -79,76 +93,137 @@ class LendingManager {
     });
   }
 
-  // Submit scan request from mobile student scanner
-  submitLendingRequest(book: Book, studentId = 'STU-9921', studentName = 'Raghu (Computer Science)'): LendingRequest {
-    const existingPending = this.requests.find(
-      (r) => r.bookId === book.id && r.status === 'pending'
+  // --------------------------------------------------------------------------
+  // Step 1: Student Scans QR & Forwards Borrow Request to Admin
+  // --------------------------------------------------------------------------
+  async submitBorrowRequest(
+    book: Book,
+    studentId?: string,
+    studentName?: string
+  ): Promise<ActiveRequest> {
+    const identity = this.resolveStudentIdentity(studentId, studentName);
+
+    // Authoritative custody check mirroring Firestore transaction read
+    const liveBook = await LibraryApiService.getBookById(book.id);
+    if (!liveBook) {
+      throw new Error('Book copy no longer exists in catalog.');
+    }
+    if (liveBook.status !== 'on_shelf') {
+      throw new Error('This copy is currently checked out or awaiting return verification.');
+    }
+
+    const existing = this.activeRequests.find(
+      (r) =>
+        r.bookId === book.id &&
+        r.type === 'borrow' &&
+        r.status === 'pending' &&
+        r.studentId === identity.studentId
     );
-    if (existingPending) return existingPending;
+    if (existing) return existing;
+
+    const anotherPending = this.activeRequests.find(
+      (r) => r.bookId === book.id && r.type === 'borrow' && r.status === 'pending'
+    );
+    if (anotherPending) {
+      throw new Error('Another student already has a pending borrow request for this copy.');
+    }
 
     const today = new Date().toISOString().split('T')[0];
-    const newReq: LendingRequest = {
+    const newReq: ActiveRequest = {
       id: `REQ-${this.nextReqId++}`,
-      bookId: book.id,
-      bookTitle: book.title,
-      bookAuthor: book.author,
-      category: book.category,
-      studentId,
-      studentName,
+      type: 'borrow',
+      bookId: liveBook.id,
+      bookTitle: liveBook.title,
+      bookAuthor: liveBook.author,
+      category: liveBook.category,
+      shelfId: liveBook.shelfId,
+      studentId: identity.studentId,
+      studentName: identity.studentName,
       requestDate: today,
       status: 'pending'
     };
 
-    this.requests.unshift(newReq);
+    this.activeRequests.unshift(newReq);
     this.notifyListeners();
     return newReq;
   }
 
-  // Admin approves lending request -> marks book borrowed with unavailableUntil & generates bill receipt
-  approveLendingRequest(requestId: string): BillReceipt | null {
-    const req = this.requests.find((r) => r.id === requestId);
-    if (!req) return null;
+  // --------------------------------------------------------------------------
+  // Step 2: Admin Approves Borrow Request at Desk (Atomic Verification)
+  // --------------------------------------------------------------------------
+  async approveBorrowRequest(requestId: string): Promise<StudentLoan | null> {
+    const req = this.activeRequests.find((r) => r.id === requestId);
+    if (!req || req.status !== 'pending' || req.type !== 'borrow') return null;
+
+    // Verify book is still physically on_shelf before committing loan
+    const liveBook = await LibraryApiService.getBookById(req.bookId);
+    if (!liveBook || liveBook.status !== 'on_shelf') {
+      throw new Error('Cannot approve: copy is no longer available on the shelf.');
+    }
 
     const issueDate = new Date();
     const dueDate = new Date();
-    dueDate.setDate(dueDate.getDate() + 14); // 14 days lending period
+    dueDate.setDate(dueDate.getDate() + 14);
 
-    // Format: e.g. "Dec 08, 2026"
     const options: Intl.DateTimeFormatOptions = { month: 'short', day: '2-digit', year: 'numeric' };
     const formattedDueDate = dueDate.toLocaleDateString('en-US', options);
+    const loanId = `LOAN-${this.nextLoanId++}`;
+    const issuedIso = issueDate.toISOString().split('T')[0];
 
-    const billId = `BILL-2026-${this.nextBillId++}`;
+    const owner: BookOwner = {
+      studentId: req.studentId,
+      studentName: req.studentName,
+      borrowedDate: issuedIso,
+      dueDate: formattedDueDate,
+      loanId
+    };
+
+    const historyEntry: BookHistoryEntry = {
+      loanId,
+      studentId: req.studentId,
+      studentName: req.studentName,
+      borrowedDate: issuedIso,
+      dueDate: formattedDueDate
+    };
+
+    await LibraryApiService.updateBookStatus(
+      req.bookId,
+      'borrowed',
+      formattedDueDate,
+      owner,
+      historyEntry
+    );
+
     req.status = 'approved';
-    req.billId = billId;
+    req.loanId = loanId;
     req.dueDate = formattedDueDate;
 
-    const bill: BillReceipt = {
-      billId,
+    const loan: StudentLoan = {
+      loanId,
       requestId: req.id,
       bookId: req.bookId,
       bookTitle: req.bookTitle,
       bookAuthor: req.bookAuthor,
       category: req.category,
+      shelfId: req.shelfId,
       studentId: req.studentId,
       studentName: req.studentName,
-      issueDate: issueDate.toISOString().split('T')[0],
+      issueDate: issuedIso,
       dueDate: formattedDueDate,
-      lateFeePerDay: '$1.00',
-      status: 'active'
+      status: 'active',
+      lateFeePerDay: '$1.00'
     };
 
-    this.bills.unshift(bill);
-
-    // Update the book in Library catalog to borrowed with unavailableUntil date
-    LibraryApiService.updateBookStatus(req.bookId, 'borrowed', formattedDueDate);
-
+    this.studentLoans.unshift(loan);
     this.notifyListeners();
-    return bill;
+    return loan;
   }
 
-  // Admin declines lending request
-  declineLendingRequest(requestId: string): boolean {
-    const req = this.requests.find((r) => r.id === requestId);
+  // --------------------------------------------------------------------------
+  // Admin Declines Borrow Request
+  // --------------------------------------------------------------------------
+  async declineBorrowRequest(requestId: string): Promise<boolean> {
+    const req = this.activeRequests.find((r) => r.id === requestId);
     if (!req) return false;
 
     req.status = 'rejected';
@@ -156,43 +231,148 @@ class LendingManager {
     return true;
   }
 
-  // Return book -> resets status to on_shelf and clears unavailableUntil
-  returnBook(billId: string): boolean {
-    const bill = this.bills.find((b) => b.billId === billId);
-    if (!bill) return false;
+  // --------------------------------------------------------------------------
+  // Step 3: Student Initiates Return (Requires Admin Desk Verification)
+  // --------------------------------------------------------------------------
+  async submitReturnRequest(loanId: string): Promise<ActiveRequest | null> {
+    const loan = this.studentLoans.find((l) => l.loanId === loanId);
+    if (!loan || loan.status !== 'active') return null;
 
-    bill.status = 'returned';
-    const req = this.requests.find((r) => r.id === bill.requestId);
-    if (req) {
-      req.status = 'returned';
+    await LibraryApiService.updateBookStatus(loan.bookId, 'return_pending', loan.dueDate);
+    loan.status = 'return_pending';
+
+    const today = new Date().toISOString().split('T')[0];
+    const returnReq: ActiveRequest = {
+      id: `REQ-${this.nextReqId++}`,
+      type: 'return',
+      bookId: loan.bookId,
+      bookTitle: loan.bookTitle,
+      bookAuthor: loan.bookAuthor,
+      category: loan.category,
+      shelfId: loan.shelfId,
+      studentId: loan.studentId,
+      studentName: loan.studentName,
+      requestDate: today,
+      status: 'pending',
+      loanId: loan.loanId,
+      dueDate: loan.dueDate
+    };
+
+    this.activeRequests.unshift(returnReq);
+    this.notifyListeners();
+    return returnReq;
+  }
+
+  // --------------------------------------------------------------------------
+  // Step 4: Admin Confirms Physical Return & Reshelves Book
+  // --------------------------------------------------------------------------
+  async confirmReturnRequest(requestId: string, adminName?: string): Promise<boolean> {
+    const req = this.activeRequests.find((r) => r.id === requestId);
+    if (!req || req.status !== 'pending' || req.type !== 'return') return false;
+
+    const approver = adminName || AuthService.getCurrentUser()?.name || 'Circulation Desk';
+    const today = new Date().toISOString().split('T')[0];
+
+    const loan = this.studentLoans.find((l) => l.loanId === req.loanId);
+    const historyUpdate: BookHistoryEntry = {
+      loanId: req.loanId || '',
+      studentId: req.studentId,
+      studentName: req.studentName,
+      borrowedDate: loan?.issueDate || today,
+      dueDate: req.dueDate || '',
+      returnedDate: today,
+      returnApprovedBy: approver
+    };
+
+    await LibraryApiService.updateBookStatus(
+      req.bookId,
+      'on_shelf',
+      undefined,
+      null,
+      historyUpdate
+    );
+
+    req.status = 'approved';
+    if (loan) {
+      loan.status = 'returned';
+      loan.returnedDate = today;
+      loan.returnApprovedBy = approver;
     }
-
-    // Reset book status to on_shelf
-    LibraryApiService.updateBookStatus(bill.bookId, 'on_shelf', undefined);
 
     this.notifyListeners();
     return true;
   }
 
-  // Retrieve user collections (bills)
-  getUserCollections(studentId = 'STU-9921'): BillReceipt[] {
-    return this.bills.filter((b) => b.studentId === studentId);
+  // --------------------------------------------------------------------------
+  // Admin Declines Return Request
+  // --------------------------------------------------------------------------
+  async declineReturnRequest(requestId: string): Promise<boolean> {
+    const req = this.activeRequests.find((r) => r.id === requestId);
+    if (!req) return false;
+
+    const loan = this.studentLoans.find((l) => l.loanId === req.loanId);
+    if (loan) {
+      await LibraryApiService.updateBookStatus(loan.bookId, 'borrowed', loan.dueDate);
+      loan.status = 'active';
+    }
+
+    req.status = 'rejected';
+    this.notifyListeners();
+    return true;
   }
 
-  // Retrieve all requests for admin console
-  getAllRequests(): LendingRequest[] {
-    return this.requests;
+  // --------------------------------------------------------------------------
+  // Async Queries
+  // --------------------------------------------------------------------------
+  async getUserActiveLoans(studentId?: string): Promise<StudentLoan[]> {
+    const resolvedId = this.resolveStudentIdentity(studentId).studentId;
+    return this.studentLoans.filter((l) => l.studentId === resolvedId && l.status === 'active');
   }
 
-  // Retrieve pending requests
-  getPendingRequests(): LendingRequest[] {
-    return this.requests.filter((r) => r.status === 'pending');
+  async getUserPendingReturns(studentId?: string): Promise<StudentLoan[]> {
+    const resolvedId = this.resolveStudentIdentity(studentId).studentId;
+    return this.studentLoans.filter(
+      (l) => l.studentId === resolvedId && l.status === 'return_pending'
+    );
   }
 
-  // Get request for a specific book by ID
-  getRequestForBook(bookId: string): LendingRequest | undefined {
-    return this.requests.find((r) => r.bookId === bookId);
+  async getUserBorrowingHistory(studentId?: string): Promise<StudentLoan[]> {
+    const resolvedId = this.resolveStudentIdentity(studentId).studentId;
+    return this.studentLoans.filter((l) => l.studentId === resolvedId && l.status === 'returned');
+  }
+
+  async getUserPendingBorrowRequests(studentId?: string): Promise<ActiveRequest[]> {
+    const resolvedId = this.resolveStudentIdentity(studentId).studentId;
+    return this.activeRequests.filter(
+      (r) => r.studentId === resolvedId && r.type === 'borrow' && r.status === 'pending'
+    );
+  }
+
+  async getRequestForBook(bookId: string): Promise<ActiveRequest | null> {
+    const currentId = this.resolveStudentIdentity().studentId;
+    return (
+      this.activeRequests.find(
+        (r) => r.bookId === bookId && r.status === 'pending' && r.studentId === currentId
+      ) ||
+      this.activeRequests.find((r) => r.bookId === bookId && r.status === 'pending') ||
+      null
+    );
+  }
+
+  async getPendingBorrowRequests(): Promise<ActiveRequest[]> {
+    return this.activeRequests.filter((r) => r.type === 'borrow' && r.status === 'pending');
+  }
+
+  async getPendingReturnRequests(): Promise<ActiveRequest[]> {
+    return this.activeRequests.filter((r) => r.type === 'return' && r.status === 'pending');
+  }
+
+  async getAllActiveRequests(): Promise<ActiveRequest[]> {
+    return [...this.activeRequests];
   }
 }
 
-export const LendingService = new LendingManager();
+export const LendingService: ILendingRepository =
+  APP_CONFIG.DATA_PROVIDER === 'firestore'
+    ? new FirestoreLendingRepository()
+    : new LocalLendingRepository();

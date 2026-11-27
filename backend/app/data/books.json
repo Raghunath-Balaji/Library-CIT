@@ -7,7 +7,9 @@
     "shelfId": "SH-CS-1",
     "row": 1,
     "status": "on_shelf",
-    "description": "Foundational textbook on algorithm design, asymptotics, and graph theory."
+    "description": "Foundational textbook on algorithm design, asymptotics, and graph theory.",
+    "currentOwner": null,
+    "history": []
   },
   {
     "id": "LIB1:CS01-2",
@@ -17,7 +19,9 @@
     "shelfId": "SH-CS-1",
     "row": 1,
     "status": "on_shelf",
-    "description": "Trees, heaps, balancing algorithms, and amortized complexity."
+    "description": "Trees, heaps, balancing algorithms, and amortized complexity.",
+    "currentOwner": null,
+    "history": []
   },
   {
     "id": "LIB1:CS01-3",
@@ -27,7 +31,9 @@
     "shelfId": "SH-CS-1",
     "row": 2,
     "status": "on_shelf",
-    "description": "Fundamental algorithms, information structures, and linear lists."
+    "description": "Fundamental algorithms, information structures, and linear lists.",
+    "currentOwner": null,
+    "history": []
   },
   {
     "id": "LIB1:CS01-4",
@@ -37,7 +43,9 @@
     "shelfId": "SH-CS-1",
     "row": 3,
     "status": "on_shelf",
-    "description": "Illustrated guide to practical algorithms for programmers."
+    "description": "Illustrated guide to practical algorithms for programmers.",
+    "currentOwner": null,
+    "history": []
   },
   {
     "id": "LIB1:CS02-1",
@@ -47,7 +55,9 @@
     "shelfId": "SH-CS-2",
     "row": 1,
     "status": "on_shelf",
-    "description": "Kernel architecture, process scheduling, concurrency, and virtual memory."
+    "description": "Kernel architecture, process scheduling, concurrency, and virtual memory.",
+    "currentOwner": null,
+    "history": []
   },
   {
     "id": "LIB1:CS02-2",
@@ -57,7 +67,9 @@
     "shelfId": "SH-CS-2",
     "row": 2,
     "status": "on_shelf",
-    "description": "Standard AI textbook covering search, logic, and deep reinforcement learning."
+    "description": "Standard AI textbook covering search, logic, and deep reinforcement learning.",
+    "currentOwner": null,
+    "history": []
   },
   {
     "id": "LIB1:CS02-3",
@@ -67,7 +79,9 @@
     "shelfId": "SH-CS-2",
     "row": 3,
     "status": "on_shelf",
-    "description": "Practical neural network design using Keras and PyTorch."
+    "description": "Practical neural network design using Keras and PyTorch.",
+    "currentOwner": null,
+    "history": []
   },
   {
     "id": "LIB1:CS02-4",
@@ -77,7 +91,9 @@
     "shelfId": "SH-CS-2",
     "row": 1,
     "status": "on_shelf",
-    "description": "Application layer, TCP/IP congestion control, and routing architectures."
+    "description": "Application layer, TCP/IP congestion control, and routing architectures.",
+    "currentOwner": null,
+    "history": []
   },
   {
     "id": "LIB1:CS02-5",
@@ -87,7 +103,9 @@
     "shelfId": "SH-CS-2",
     "row": 2,
     "status": "on_shelf",
-    "description": "Symmetric ciphers, public-key encryption, and zero-trust security."
+    "description": "Symmetric ciphers, public-key encryption, and zero-trust security.",
+    "currentOwner": null,
+    "history": []
   },
   {
     "id": "LIB1:EC01-1",
@@ -97,7 +115,9 @@
     "shelfId": "SH-EC-1",
     "row": 1,
     "status": "on_shelf",
-    "description": "MOSFETs, BJTs, differential amplifiers, and frequency response analysis."
+    "description": "MOSFETs, BJTs, differential amplifiers, and frequency response analysis.",
+    "currentOwner": null,
+    "history": []
   },
   {
     "id": "LIB1:EC01-2",
@@ -107,7 +127,9 @@
     "shelfId": "SH-EC-1",
     "row": 2,
     "status": "on_shelf",
-    "description": "Semiconductor physics, diode rectifiers, and transistor biasing."
+    "description": "Semiconductor physics, diode rectifiers, and transistor biasing.",
+    "currentOwner": null,
+    "history": []
   },
   {
     "id": "LIB1:EC01-3",
@@ -117,7 +139,9 @@
     "shelfId": "SH-EC-1",
     "row": 1,
     "status": "on_shelf",
-    "description": "LTI systems, Fourier analysis, Laplace and Z-transforms."
+    "description": "LTI systems, Fourier analysis, Laplace and Z-transforms.",
+    "currentOwner": null,
+    "history": []
   },
   {
     "id": "LIB1:EC01-4",
@@ -127,7 +151,9 @@
     "shelfId": "SH-EC-1",
     "row": 2,
     "status": "on_shelf",
-    "description": "Discrete Fourier transforms, FFT algorithms, and FIR/IIR filter design."
+    "description": "Discrete Fourier transforms, FFT algorithms, and FIR/IIR filter design.",
+    "currentOwner": null,
+    "history": []
   },
   {
     "id": "LIB1:EC01-5",
@@ -137,7 +163,9 @@
     "shelfId": "SH-EC-1",
     "row": 3,
     "status": "on_shelf",
-    "description": "Silicon layout rules, propagation delay estimation, and CMOS clocking."
+    "description": "Silicon layout rules, propagation delay estimation, and CMOS clocking.",
+    "currentOwner": null,
+    "history": []
   },
   {
     "id": "LIB1:ME01-1",
@@ -147,7 +175,9 @@
     "shelfId": "SH-ME-1",
     "row": 1,
     "status": "on_shelf",
-    "description": "First and second laws, exergy analysis, and gas turbine power cycles."
+    "description": "First and second laws, exergy analysis, and gas turbine power cycles.",
+    "currentOwner": null,
+    "history": []
   },
   {
     "id": "LIB1:ME01-2",
@@ -157,7 +187,9 @@
     "shelfId": "SH-ME-1",
     "row": 2,
     "status": "on_shelf",
-    "description": "Navier-Stokes equations, boundary layer theory, and pipe flow losses."
+    "description": "Navier-Stokes equations, boundary layer theory, and pipe flow losses.",
+    "currentOwner": null,
+    "history": []
   },
   {
     "id": "LIB1:ME01-3",
@@ -167,7 +199,9 @@
     "shelfId": "SH-ME-1",
     "row": 1,
     "status": "on_shelf",
-    "description": "Forward & inverse kinematics, Jacobians, and robot trajectory planning."
+    "description": "Forward & inverse kinematics, Jacobians, and robot trajectory planning.",
+    "currentOwner": null,
+    "history": []
   },
   {
     "id": "LIB1:ME01-4",
@@ -177,7 +211,9 @@
     "shelfId": "SH-ME-1",
     "row": 2,
     "status": "on_shelf",
-    "description": "CNC machining, robotic workcells, and flexible manufacturing systems."
+    "description": "CNC machining, robotic workcells, and flexible manufacturing systems.",
+    "currentOwner": null,
+    "history": []
   },
   {
     "id": "LIB1:ME01-5",
@@ -187,7 +223,9 @@
     "shelfId": "SH-ME-1",
     "row": 3,
     "status": "on_shelf",
-    "description": "Fatigue failure criteria, shafts, gears, bearings, and bolted joints."
+    "description": "Fatigue failure criteria, shafts, gears, bearings, and bolted joints.",
+    "currentOwner": null,
+    "history": []
   },
   {
     "id": "LIB1:PH01-1",
@@ -197,7 +235,9 @@
     "shelfId": "SH-PH-1",
     "row": 1,
     "status": "on_shelf",
-    "description": "Special relativity, photoelectric effect, and Schrödinger wave equation."
+    "description": "Special relativity, photoelectric effect, and Schrödinger wave equation.",
+    "currentOwner": null,
+    "history": []
   },
   {
     "id": "LIB1:PH01-2",
@@ -207,7 +247,9 @@
     "shelfId": "SH-PH-1",
     "row": 2,
     "status": "on_shelf",
-    "description": "Wave propagation, diffraction gratings, lasers, and polarization."
+    "description": "Wave propagation, diffraction gratings, lasers, and polarization.",
+    "currentOwner": null,
+    "history": []
   },
   {
     "id": "LIB1:PH01-3",
@@ -217,7 +259,9 @@
     "shelfId": "SH-PH-1",
     "row": 1,
     "status": "on_shelf",
-    "description": "ODEs, PDEs, vector calculus, complex analysis, and numerical series."
+    "description": "ODEs, PDEs, vector calculus, complex analysis, and numerical series.",
+    "currentOwner": null,
+    "history": []
   },
   {
     "id": "LIB1:PH01-4",
@@ -227,7 +271,9 @@
     "shelfId": "SH-PH-1",
     "row": 2,
     "status": "on_shelf",
-    "description": "Eigendecomposition, singular value decomposition, and vector spaces."
+    "description": "Eigendecomposition, singular value decomposition, and vector spaces.",
+    "currentOwner": null,
+    "history": []
   },
   {
     "id": "LIB1:CE01-1",
@@ -237,7 +283,9 @@
     "shelfId": "SH-CE-1",
     "row": 1,
     "status": "on_shelf",
-    "description": "Trusses, moment distribution method, and slope deflection analysis."
+    "description": "Trusses, moment distribution method, and slope deflection analysis.",
+    "currentOwner": null,
+    "history": []
   },
   {
     "id": "LIB1:CE01-2",
@@ -247,7 +295,9 @@
     "shelfId": "SH-CE-1",
     "row": 2,
     "status": "on_shelf",
-    "description": "Theodolite traverse, total station triangulation, and contour mapping."
+    "description": "Theodolite traverse, total station triangulation, and contour mapping.",
+    "currentOwner": null,
+    "history": []
   },
   {
     "id": "LIB1:CE01-3",
@@ -257,7 +307,9 @@
     "shelfId": "SH-CE-1",
     "row": 3,
     "status": "on_shelf",
-    "description": "Limit state design of beams, columns, footings, and slabs."
+    "description": "Limit state design of beams, columns, footings, and slabs.",
+    "currentOwner": null,
+    "history": []
   },
   {
     "id": "LIB1:REF01-1",
@@ -267,7 +319,9 @@
     "shelfId": "SH-REF-1",
     "row": 1,
     "status": "on_shelf",
-    "description": "Comprehensive reference tables, metallurgy, thermodynamics, and machine design."
+    "description": "Comprehensive reference tables, metallurgy, thermodynamics, and machine design.",
+    "currentOwner": null,
+    "history": []
   },
   {
     "id": "LIB1:REF01-2",
@@ -277,7 +331,9 @@
     "shelfId": "SH-REF-1",
     "row": 2,
     "status": "on_shelf",
-    "description": "Physical constants, chemical thermodynamic data, and isotope tables."
+    "description": "Physical constants, chemical thermodynamic data, and isotope tables.",
+    "currentOwner": null,
+    "history": []
   },
   {
     "id": "LIB1:REF01-3",
@@ -287,6 +343,8 @@
     "shelfId": "SH-REF-1",
     "row": 3,
     "status": "on_shelf",
-    "description": "Peer-reviewed research papers on deep learning architectures and hardware acceleration."
+    "description": "Peer-reviewed research papers on deep learning architectures and hardware acceleration.",
+    "currentOwner": null,
+    "history": []
   }
 ]

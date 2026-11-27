@@ -8,7 +8,7 @@ import { BottomNavBar, NavTab } from '../components/BottomNavBar';
 import { CollectionsScreen } from './CollectionsScreen';
 import { QRScannerScreen } from './QRScannerScreen';
 import { ProfileScreen } from './ProfileScreen';
-import { QRCodeModal } from '../components/QRCodeModal';
+import { BookDetailModal } from '../components/BookDetailModal';
 import { LibraryApiService } from '../services/api';
 import { Book, LayoutConfig, ShelfItem } from '../types';
 
@@ -64,7 +64,7 @@ export const StudentMapScreen: React.FC<StudentMapScreenProps> = ({ onSwitchToAd
     : [];
 
   return (
-    <View className="flex-1 bg-slate-100 relative">
+    <View className="flex-1 bg-appBg relative">
       <View className="flex-1">
         {/* ========================================================= */}
         {/* TAB 1: HOME (3D MAP WITH GRADIENT OPTICAL FROST BLUR)    */}
@@ -83,7 +83,9 @@ export const StudentMapScreen: React.FC<StudentMapScreenProps> = ({ onSwitchToAd
         {/* ========================================================= */}
         {/* TAB 2: COLLECTIONS (BORROWED BOOKS & BILLS)               */}
         {/* ========================================================= */}
-        {currentTab === 'collections' && <CollectionsScreen />}
+        {currentTab === 'collections' && (
+          <CollectionsScreen onBack={() => setCurrentTab('home')} />
+        )}
 
         {/* ========================================================= */}
         {/* TAB 3: QR SCANNER (IN-LIBRARY BORROWING WORKFLOW)         */}
@@ -95,7 +97,12 @@ export const StudentMapScreen: React.FC<StudentMapScreenProps> = ({ onSwitchToAd
         {/* ========================================================= */}
         {/* TAB 4: PROFILE (STUDENT ID & SWITCH TO ADMIN)            */}
         {/* ========================================================= */}
-        {currentTab === 'profile' && <ProfileScreen onSwitchToAdmin={onSwitchToAdmin} />}
+        {currentTab === 'profile' && (
+          <ProfileScreen
+            onBack={() => setCurrentTab('home')}
+            onSwitchToAdmin={onSwitchToAdmin}
+          />
+        )}
       </View>
 
       {/* ========================================================= */}
@@ -136,10 +143,14 @@ export const StudentMapScreen: React.FC<StudentMapScreenProps> = ({ onSwitchToAd
         }}
       />
 
-      {/* QR Code Payload Modal */}
-      <QRCodeModal
+      {/* Book Details Modal (includes nested QR Pop-up & Ratings) */}
+      <BookDetailModal
         visible={qrModalVisible}
-        book={selectedBookForQR}
+        book={
+          selectedBookForQR
+            ? books.find((b) => b.id === selectedBookForQR.id) || selectedBookForQR
+            : null
+        }
         onClose={() => setQrModalVisible(false)}
       />
     </View>

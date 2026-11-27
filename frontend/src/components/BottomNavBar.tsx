@@ -9,7 +9,7 @@ interface BottomNavBarProps {
   onSelectTab: (tab: NavTab) => void;
 }
 
-// Clean Vector SVG Icons (Zero Emojis)
+// Clean Vector SVG Icons (Zero Emojis) - Outlined when inactive, filled when active
 const HomeIcon: React.FC<{ active: boolean }> = ({ active }) => (
   <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
     <Path
@@ -18,20 +18,42 @@ const HomeIcon: React.FC<{ active: boolean }> = ({ active }) => (
       strokeWidth={2}
       strokeLinecap="round"
       strokeLinejoin="round"
-      fill={active ? '#e0f2fe' : 'none'}
+      fill={active ? '#0284c7' : 'none'}
     />
+    {active && (
+      <Path
+        d="M9 21v-6h6v6"
+        stroke="#ffffff"
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    )}
   </Svg>
 );
 
 const CollectionsIcon: React.FC<{ active: boolean }> = ({ active }) => (
   <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
     <Path
-      d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"
+      d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"
       stroke={active ? '#0284c7' : '#475569'}
       strokeWidth={2}
       strokeLinecap="round"
       strokeLinejoin="round"
-      fill={active ? '#e0f2fe' : 'none'}
+      fill={active ? '#0284c7' : 'none'}
+    />
+    <Path
+      d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"
+      stroke={active ? '#ffffff' : '#475569'}
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M8.5 7h7M8.5 11h5"
+      stroke={active ? '#ffffff' : '#475569'}
+      strokeWidth={1.6}
+      strokeLinecap="round"
     />
   </Svg>
 );
@@ -53,7 +75,7 @@ const ScannerIcon: React.FC<{ active: boolean }> = ({ active }) => (
       rx="2"
       stroke={active ? '#0284c7' : '#475569'}
       strokeWidth={2}
-      fill={active ? '#e0f2fe' : 'none'}
+      fill={active ? '#0284c7' : 'none'}
     />
   </Svg>
 );
@@ -61,11 +83,12 @@ const ScannerIcon: React.FC<{ active: boolean }> = ({ active }) => (
 const ProfileIcon: React.FC<{ active: boolean }> = ({ active }) => (
   <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
     <Path
-      d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"
+      d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2z"
       stroke={active ? '#0284c7' : '#475569'}
       strokeWidth={2}
       strokeLinecap="round"
       strokeLinejoin="round"
+      fill={active ? '#0284c7' : 'none'}
     />
     <Path
       d="M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"
@@ -73,7 +96,7 @@ const ProfileIcon: React.FC<{ active: boolean }> = ({ active }) => (
       strokeWidth={2}
       strokeLinecap="round"
       strokeLinejoin="round"
-      fill={active ? '#e0f2fe' : 'none'}
+      fill={active ? '#0284c7' : 'none'}
     />
   </Svg>
 );
@@ -119,9 +142,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ currentTab, onSelect
               onPress={() => onSelectTab(tab.id)}
               hitSlop={16}
               style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
-              className={`flex-col items-center justify-center py-1.5 px-3 rounded-full ${
-                isActive ? 'bg-sky-100' : 'bg-transparent'
-              }`}
+              className="flex-col items-center justify-center py-1.5 px-3 bg-transparent"
             >
               <Icon active={isActive} />
               <Text

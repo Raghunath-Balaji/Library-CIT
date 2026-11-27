@@ -1,24 +1,47 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, Pressable, Animated, Easing, TextInput } from 'react-native';
-import Svg, { Path, Rect, Circle } from 'react-native-svg';
+import { View, Text, Pressable, TextInput } from 'react-native';
+import Svg, { Path, Circle, Rect } from 'react-native-svg';
 import { LibraryApiService } from '../services/api';
-import { LendingService, LendingRequest } from '../services/lendingService';
-import { Book } from '../types';
+import { LendingService } from '../services/lendingService';
+import {
+  ScannedBookBottomCard,
+  PendingBorrowBottomBar,
+  BulkBorrowBillModal
+} from '../components/BorrowBillOverlay';
+import { Book, ActiveRequest } from '../types';
 
 interface QRScannerScreenProps {
   onSuccessCheckout: () => void;
 }
 
-const CameraIcon: React.FC<{ color?: string }> = ({ color = '#38bdf8' }) => (
-  <Svg width={32} height={32} viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"
+const VideoStatusIcon: React.FC<{ color: string }> = ({ color }) => (
+  <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+    <Rect
+      x="2"
+      y="6"
+      width="14"
+      height="12"
+      rx="2.5"
       stroke={color}
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
+      strokeWidth={2.2}
+      fill={color}
+      fillOpacity={0.22}
     />
-    <Circle cx="12" cy="13" r="4" stroke={color} strokeWidth={2} />
+    <Path
+      d="M16 10l5-3v10l-5-3v-4z"
+      stroke={color}
+      strokeWidth={2.2}
+      strokeLinejoin="round"
+      fill={color}
+      fillOpacity={0.22}
+    />
+  </Svg>
+);
+
+const SearchGlassIcon: React.FC<{ color?: string }> = ({ color = '#1e293b' }) => (
+  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+    <Circle cx="11" cy="11" r="7" stroke={color} strokeWidth={1.6} />
+    <Path d="M20 20l-3.5-3.5" stroke={color} strokeWidth={1.6} strokeLinecap="round" />
   </Svg>
 );
 
@@ -29,56 +52,98 @@ const ShutterIcon: React.FC<{ color?: string }> = ({ color = '#ffffff' }) => (
   </Svg>
 );
 
-const CheckCircleIcon: React.FC<{ color?: string }> = ({ color = '#10b981' }) => (
-  <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-    <Circle cx="12" cy="12" r="10" stroke={color} strokeWidth={2} />
-    <Path d="M8 12l2.5 2.5L16 9" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-  </Svg>
-);
-
 export const QRScannerScreen: React.FC<QRScannerScreenProps> = ({ onSuccessCheckout }) => {
-  const [books, setBooks] = useState<Book[]>([]);
   const [detectedBook, setDetectedBook] = useState<Book | null>(null);
-  const [activeRequest, setActiveRequest] = useState<LendingRequest | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [manualInputOpen, setManualInputOpen] = useState(false);
   const [typedId, setTypedId] = useState('');
   const [isLiveActive, setIsLiveActive] = useState(false);
+  const [lightLevel, setLightLevel] = useState<'good' | 'dim' | 'dark'>('good');
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
+  // Bulk Borrow Session Bill State
+  const [sessionRequests, setSessionRequests] = useState<ActiveRequest[]>([]);
+  const [showBillModal, setShowBillModal] = useState(false);
+  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
+  const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const videoElementRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const laserAnim = useRef(new Animated.Value(0)).current;
-
   useEffect(() => {
-    LibraryApiService.getBooks().then((res) => setBooks(res));
-    const unsub = LibraryApiService.subscribeToBooks((updated) => setBooks(updated));
+    const syncSessionRequests = async () => {
+      if (sessionRequests.length === 0 || showSuccessAnimation) return;
+      const allReqs = await LendingService.getAllActiveRequests();
+      const updatedList = sessionRequests.map(
+        (sr) => allReqs.find((r) => r.id === sr.id) || sr
+      );
+      setSessionRequests(updatedList);
 
-    const sweep = Animated.loop(
-      Animated.sequence([
-        Animated.timing(laserAnim, {
-          toValue: 1,
-          duration: 1800,
-          easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true
-        }),
-        Animated.timing(laserAnim, {
-          toValue: 0,
-          duration: 1800,
-          easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true
-        })
-      ])
-    );
-    sweep.start();
+      const allResolved = updatedList.every((r) => r.status !== 'pending');
+      if (allResolved) {
+        setShowBillModal(true);
+        setShowSuccessAnimation(true);
+        if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
+        redirectTimerRef.current = setTimeout(() => {
+          setShowSuccessAnimation(false);
+          setShowBillModal(false);
+          setSessionRequests([]);
+          onSuccessCheckout();
+        }, 1800);
+      }
+    };
+
+    const unsubLending = LendingService.subscribe(() => {
+      syncSessionRequests();
+    });
 
     return () => {
-      sweep.stop();
-      unsub();
+      unsubLending();
+    };
+  }, [sessionRequests, showSuccessAnimation, onSuccessCheckout]);
+
+  useEffect(() => {
+    if (!isLiveActive || typeof document === 'undefined') {
+      setLightLevel('good');
+      return;
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 16;
+    canvas.height = 16;
+    const ctx = canvas.getContext('2d');
+
+    const interval = setInterval(() => {
+      const video = videoElementRef.current;
+      if (!ctx || !video || video.readyState < 2) return;
+      try {
+        ctx.drawImage(video, 0, 0, 16, 16);
+        const data = ctx.getImageData(0, 0, 16, 16).data;
+        let sum = 0;
+        for (let i = 0; i < data.length; i += 4) {
+          sum += 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+        }
+        const avg = sum / (data.length / 4);
+        if (avg < 25) {
+          setLightLevel('dark');
+        } else if (avg < 70) {
+          setLightLevel('dim');
+        } else {
+          setLightLevel('good');
+        }
+      } catch {}
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isLiveActive]);
+
+  useEffect(() => {
+    return () => {
+      if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
       stopCamera();
     };
-  }, [laserAnim]);
+  }, []);
 
   const stopCamera = () => {
     if (streamRef.current) {
@@ -94,7 +159,7 @@ export const QRScannerScreen: React.FC<QRScannerScreenProps> = ({ onSuccessCheck
   const startLiveCamera = async () => {
     setStatusMessage(null);
     if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
-      setStatusMessage('Live camera requires HTTPS or localhost. Snap QR photo instead.');
+      setStatusMessage('Live camera requires HTTPS or localhost. Use Enter ID instead.');
       return;
     }
 
@@ -121,7 +186,8 @@ export const QRScannerScreen: React.FC<QRScannerScreenProps> = ({ onSuccessCheck
     }
   };
 
-  const processBarcode = (rawData: string) => {
+  const processBarcode = async (rawData: string) => {
+    setStatusMessage(null);
     let clean = rawData.trim();
     if (clean.startsWith('{') && clean.endsWith('}')) {
       try {
@@ -130,32 +196,48 @@ export const QRScannerScreen: React.FC<QRScannerScreenProps> = ({ onSuccessCheck
       } catch {}
     }
 
-    const matched = books.find((b) => b.id.toLowerCase() === clean.toLowerCase()) || null;
+    const matched = await LibraryApiService.getBookById(clean);
+    if (!matched) {
+      setDetectedBook(null);
+      setStatusMessage(`No book copy found for ID "${clean}".`);
+      return;
+    }
+
     setDetectedBook(matched);
-    if (matched) {
-      const req = LendingService.getRequestForBook(matched.id) || null;
-      setActiveRequest(req);
+  };
+
+  const handleBorrowBook = async () => {
+    if (!detectedBook || isSubmitting) return;
+    setStatusMessage(null);
+    setIsSubmitting(true);
+    try {
+      const req = await LendingService.submitBorrowRequest(detectedBook);
+      setSessionRequests((prev) => {
+        if (prev.some((r) => r.id === req.id)) return prev;
+        return [...prev, req];
+      });
+      setDetectedBook(null);
+      setTypedId('');
+      setShowBillModal(true);
+    } catch (err: any) {
+      setStatusMessage(err?.message || 'Unable to submit borrow request.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleBorrowBook = () => {
-    if (!detectedBook) return;
-    const req = LendingService.submitLendingRequest(detectedBook);
-    LendingService.approveLendingRequest(req.id);
-    const updated = LendingService.getRequestForBook(detectedBook.id) || null;
-    setActiveRequest(updated);
-  };
-
-  const handleScanAnother = () => {
+  const handleRescan = () => {
     setDetectedBook(null);
-    setActiveRequest(null);
+    setStatusMessage(null);
     setTypedId('');
   };
 
-  const translateY = laserAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 200]
-  });
+  const handleAddMoreBooks = () => {
+    setShowBillModal(false);
+    setDetectedBook(null);
+    setStatusMessage(null);
+    setTypedId('');
+  };
 
   return (
     <View className="flex-1 bg-slate-950 relative overflow-hidden">
@@ -182,13 +264,35 @@ export const QRScannerScreen: React.FC<QRScannerScreenProps> = ({ onSuccessCheck
         muted
       />
 
-      {/* Top Floating Control Pill */}
+      {/* Top Floating Control Row */}
       <View className="absolute top-6 left-5 right-5 z-20 flex-row items-center justify-between">
-        <View className="flex-row items-center bg-slate-900/90 border border-slate-700 px-3.5 py-1.5 rounded-full">
-          <View className={`w-2 h-2 rounded-full mr-2 ${isLiveActive ? 'bg-emerald-400' : 'bg-sky-400'}`} />
-          <Text className="text-xs font-bold text-white">
-            {isLiveActive ? 'Webcam Active' : 'QR Scanner'}
-          </Text>
+        <View className="flex-row items-center">
+          <View
+            style={
+              lightLevel === 'good'
+                ? undefined
+                : ({
+                    filter: `drop-shadow(0 0 8px ${
+                      lightLevel === 'dark' ? '#ef4444' : '#facc15'
+                    })`
+                  } as any)
+            }
+          >
+            <VideoStatusIcon
+              color={
+                lightLevel === 'dark'
+                  ? '#ef4444'
+                  : lightLevel === 'dim'
+                  ? '#facc15'
+                  : '#22c55e'
+              }
+            />
+          </View>
+          {lightLevel !== 'good' && (
+            <Text className="text-xs font-bold ml-2 text-white">
+              Use torch for better visibility
+            </Text>
+          )}
         </View>
 
         <View className="flex-row items-center">
@@ -215,151 +319,86 @@ export const QRScannerScreen: React.FC<QRScannerScreenProps> = ({ onSuccessCheck
         type="file"
         accept="image/*"
         capture="environment"
-        onChange={(e) => {
-          // If a file is uploaded, simulate scanning LIB1:CS01-1 for instant checkout testing
+        onChange={() => {
           processBarcode('LIB1:CS01-1');
         }}
         style={{ display: 'none' }}
       />
 
-      {/* Manual Input Drawer */}
+      {/* Minimalist Grey Textbox + Light-Blue Magnifying Glass Button */}
       {manualInputOpen && (
-        <View className="absolute top-16 left-5 right-5 z-30 bg-slate-900/95 border border-slate-700 p-4 rounded-2xl shadow-2xl">
-          <Text className="text-xs font-bold text-slate-300 mb-2">Enter Book Copy ID</Text>
-          <View className="flex-row items-center">
-            <TextInput
-              placeholder="e.g. LIB1:CS01-1"
-              placeholderTextColor="#64748b"
-              value={typedId}
-              onChangeText={setTypedId}
-              className="flex-1 bg-slate-800 border border-slate-700 text-white font-mono px-3 py-2 rounded-xl text-xs mr-2"
-            />
-            <Pressable
-              onPress={() => {
-                setManualInputOpen(false);
-                processBarcode(typedId);
-              }}
-              className="py-2 px-3.5 bg-sky-600 rounded-xl items-center justify-center"
-            >
-              <Text className="text-xs font-bold text-white">Find</Text>
-            </Pressable>
-          </View>
+        <View className="absolute top-16 left-5 right-5 z-30 flex-row items-center">
+          <TextInput
+            placeholder="Enter Book Copy ID"
+            placeholderTextColor="#cbd5e1"
+            value={typedId}
+            onChangeText={setTypedId}
+            className="flex-1 bg-slate-700/90 border border-slate-600/70 text-white font-mono px-3.5 py-2.5 rounded-lg text-xs mr-2 shadow-lg"
+          />
+          <Pressable
+            onPress={() => {
+              setManualInputOpen(false);
+              processBarcode(typedId);
+            }}
+            style={({ pressed }) => [{ opacity: pressed ? 0.75 : 1 }]}
+            className="w-10 h-10 bg-sky-300/80 rounded-lg items-center justify-center shadow-lg"
+          >
+            <SearchGlassIcon color="#1e293b" />
+          </Pressable>
         </View>
       )}
 
-      {/* Center Reticle */}
+      {/* Bigger Corner-Only Translucent Light-Blue Viewfinder (No Tint, No Text, No Animation) */}
       {!detectedBook && (
-        <View pointerEvents="box-none" className="flex-1 items-center justify-center">
-          <View className="w-56 h-56 relative items-center justify-center">
-            <View className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-sky-400 rounded-tl-xl" />
-            <View className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-sky-400 rounded-tr-xl" />
-            <View className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-sky-400 rounded-bl-xl" />
-            <View className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-sky-400 rounded-br-xl" />
-
-            <Animated.View
-              pointerEvents="none"
-              style={{
-                transform: [{ translateY }],
-                position: 'absolute',
-                left: 10,
-                right: 10,
-                top: 10,
-                height: 2,
-                backgroundColor: '#38bdf8',
-                shadowColor: '#38bdf8',
-                shadowOffset: { width: 0, height: 0 },
-                shadowOpacity: 0.9,
-                shadowRadius: 8
-              }}
-            />
-
-            <Pressable
-              onPress={() => processBarcode('LIB1:CS01-1')}
-              className="px-3 py-1.5 rounded-full bg-slate-900/70 border border-sky-400/40"
-            >
-              <Text className="text-[10px] font-mono font-bold text-sky-300">
-                Click to Test (LIB1:CS01-1)
-              </Text>
-            </Pressable>
+        <View className="absolute inset-0 items-center justify-center pb-16">
+          <View className="w-72 h-72 relative">
+            <View className="absolute top-0 left-0 w-7 h-7 border-t-2 border-l-2 border-sky-300/80 rounded-tl-md" />
+            <View className="absolute top-0 right-0 w-7 h-7 border-t-2 border-r-2 border-sky-300/80 rounded-tr-md" />
+            <View className="absolute bottom-0 left-0 w-7 h-7 border-b-2 border-l-2 border-sky-300/80 rounded-bl-md" />
+            <View className="absolute bottom-0 right-0 w-7 h-7 border-b-2 border-r-2 border-sky-300/80 rounded-br-md" />
           </View>
-
-          <Text className="text-xs font-semibold text-slate-400 mt-4 tracking-wide text-center">
-            Align book QR label inside viewfinder
-          </Text>
 
           {!isLiveActive && (
             <Pressable
               onPress={startLiveCamera}
-              className="mt-4 px-4 py-2 rounded-xl bg-slate-800 border border-slate-700"
+              className="mt-5 px-4 py-2 rounded-xl bg-slate-800 border border-slate-700"
             >
               <Text className="text-xs font-bold text-slate-300">Start Live Webcam Stream</Text>
             </Pressable>
           )}
 
           {statusMessage && (
-            <Text className="text-[11px] text-amber-300 mt-2 px-6 text-center">{statusMessage}</Text>
+            <Text className="text-[11px] text-amber-300 mt-3 px-6 text-center">{statusMessage}</Text>
           )}
         </View>
       )}
 
-      {/* Detected Book Result Card */}
+      {/* Scanned Book Bottom Card */}
       {detectedBook && (
-        <View
-          style={{ bottom: 100 }}
-          className="absolute left-4 right-4 z-40 bg-white/95 border border-slate-200 p-5 rounded-3xl shadow-2xl"
-        >
-          <View className="flex-row items-center justify-between pb-2 border-b border-slate-100">
-            <View className="flex-row items-center flex-1 mr-2">
-              <CheckCircleIcon color="#0284c7" />
-              <Text className="text-xs font-bold text-sky-800 ml-1.5 uppercase tracking-wide">
-                Book Verified
-              </Text>
-            </View>
-            <View className="px-2 py-0.5 rounded bg-slate-100 border border-slate-200">
-              <Text className="text-[10px] font-mono font-bold text-slate-700">{detectedBook.id}</Text>
-            </View>
-          </View>
-
-          <Text className="text-base font-black text-slate-900 mt-2.5" numberOfLines={1}>
-            {detectedBook.title}
-          </Text>
-          <Text className="text-xs text-slate-500 mt-0.5">by {detectedBook.author}</Text>
-          <Text className="text-xs text-slate-600 mt-1">
-            Shelf: <Text className="font-bold text-slate-800">{detectedBook.shelfId}</Text> • {detectedBook.category}
-          </Text>
-
-          {activeRequest?.status === 'approved' ? (
-            <View className="mt-3.5 p-3 rounded-2xl bg-emerald-50 border border-emerald-200">
-              <Text className="text-xs font-bold text-emerald-800">Borrowing Pass Approved!</Text>
-              <Text className="text-[11px] text-emerald-700 mt-0.5">
-                Pass: <Text className="font-mono font-bold">{activeRequest.billId}</Text> • Return by {activeRequest.dueDate}
-              </Text>
-              <Pressable
-                onPress={onSuccessCheckout}
-                className="w-full mt-2.5 py-2.5 bg-emerald-700 rounded-xl items-center justify-center"
-              >
-                <Text className="text-xs font-bold text-white">View in Collections</Text>
-              </Pressable>
-            </View>
-          ) : (
-            <View className="flex-row items-center mt-4">
-              <Pressable
-                onPress={handleBorrowBook}
-                className="flex-1 py-3 bg-slate-900 rounded-xl items-center justify-center mr-2 shadow-xs"
-              >
-                <Text className="text-xs font-bold text-white">Borrow This Book</Text>
-              </Pressable>
-
-              <Pressable
-                onPress={handleScanAnother}
-                className="px-4 py-3 bg-slate-100 border border-slate-200 rounded-xl items-center"
-              >
-                <Text className="text-xs font-bold text-slate-700">Rescan</Text>
-              </Pressable>
-            </View>
-          )}
-        </View>
+        <ScannedBookBottomCard
+          book={detectedBook}
+          errorMessage={statusMessage}
+          isSubmitting={isSubmitting}
+          onBorrow={handleBorrowBook}
+          onRescan={handleRescan}
+        />
       )}
+
+      {/* Compact Pending Approval Bottom Bar */}
+      {!detectedBook && sessionRequests.length > 0 && !showSuccessAnimation && (
+        <PendingBorrowBottomBar
+          onAddMore={handleAddMoreBooks}
+          onOpenBill={() => setShowBillModal(true)}
+        />
+      )}
+
+      {/* Center Bulk Borrow Bill + Pastel Green Payment Success Animation */}
+      <BulkBorrowBillModal
+        visible={showBillModal}
+        requests={sessionRequests}
+        showSuccessAnimation={showSuccessAnimation}
+        onAddMore={handleAddMoreBooks}
+      />
     </View>
   );
 };

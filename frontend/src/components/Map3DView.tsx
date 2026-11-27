@@ -1,7 +1,8 @@
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo, useEffect, useRef } from 'react';
 import { View, ActivityIndicator, Platform } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { LayoutConfig, ShelfItem } from '../types';
+import { CUSTOM_WALL_LOGO_DATA_URI } from '../services/logoData';
 
 interface Map3DViewProps {
   layout: LayoutConfig | null;
@@ -16,6 +17,23 @@ export const Map3DView: React.FC<Map3DViewProps> = ({
   onSelectShelf,
   onSelectLibrarian
 }) => {
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const webViewRef = useRef<any>(null);
+  const initialSelectedRef = useRef<string | null>(selectedShelfId);
+
+  useEffect(() => {
+    const payload = JSON.stringify({
+      type: 'SELECT_SHELF',
+      shelfId: selectedShelfId
+    });
+    if (Platform.OS === 'web') {
+      iframeRef.current?.contentWindow?.postMessage(payload, '*');
+    } else if (webViewRef.current?.injectJavaScript) {
+      webViewRef.current.injectJavaScript(
+        `window.postMessage(${JSON.stringify(payload)}, '*'); true;`
+      );
+    }
+  }, [selectedShelfId]);
   useEffect(() => {
     if (Platform.OS !== 'web') return;
 
@@ -40,7 +58,9 @@ export const Map3DView: React.FC<Map3DViewProps> = ({
     if (!layout) return '';
 
     const serializedLayout = JSON.stringify(layout);
-    const activeShelfId = selectedShelfId ? JSON.stringify(selectedShelfId) : 'null';
+    const activeShelfId = initialSelectedRef.current
+      ? JSON.stringify(initialSelectedRef.current)
+      : 'null';
 
     return `
       <!DOCTYPE html>
@@ -93,6 +113,7 @@ export const Map3DView: React.FC<Map3DViewProps> = ({
             (function() {
               const layoutData = ${serializedLayout};
               const initiallySelectedShelfId = ${activeShelfId};
+              const customLogoUri = ${JSON.stringify(CUSTOM_WALL_LOGO_DATA_URI)};
               const container = document.getElementById('canvas-container');
 
               const scene = new THREE.Scene();
@@ -739,13 +760,104 @@ export const Map3DView: React.FC<Map3DViewProps> = ({
               scene.add(endPost);
 
               // =============================================================
+              // CUSTOM INSTITUTIONAL WALL LOGO PLAQUE & GALLERY DOWNLIGHT
+              // (East Feature Wall: x = 21.94, y = 3.0, z = 3.8, facing into library)
+              // =============================================================
+              const logoGroup = new THREE.Group();
+              const logoAspect = 327 / 227;
+              const logoW = 3.2;
+              const logoH = logoW / logoAspect;
+              const logoZ = 3.8;
+              const logoY = 3.0;
+
+              // 1. Architectural Backing Plaque (Stately matte dark slate frame)
+              const plaqueFrameMat = new THREE.MeshStandardMaterial({
+                color: 0x1e293b,
+                roughness: 0.6,
+                metalness: 0.2
+              });
+              const plaqueFrame = new THREE.Mesh(
+                new THREE.BoxGeometry(0.06, logoH + 0.22, logoW + 0.22),
+                plaqueFrameMat
+              );
+              plaqueFrame.position.set(roomW - 0.03, logoY, logoZ);
+              plaqueFrame.castShadow = true;
+              plaqueFrame.receiveShadow = true;
+              logoGroup.add(plaqueFrame);
+
+              // 2. Beveled Inset Rim
+              const plaqueRimMat = new THREE.MeshStandardMaterial({
+                color: 0xe2e8f0,
+                roughness: 0.3,
+                metalness: 0.4
+              });
+              const plaqueRim = new THREE.Mesh(
+                new THREE.BoxGeometry(0.065, logoH + 0.08, logoW + 0.08),
+                plaqueRimMat
+              );
+              plaqueRim.position.set(roomW - 0.035, logoY, logoZ);
+              logoGroup.add(plaqueRim);
+
+              // 3. High-Resolution Texture Plane
+              const logoTexLoader = new THREE.TextureLoader();
+              const logoTexture = logoTexLoader.load(customLogoUri, () => {
+                renderer.render(scene, camera);
+              });
+              logoTexture.anisotropy = 8;
+              logoTexture.generateMipmaps = true;
+              logoTexture.minFilter = THREE.LinearMipmapLinearFilter;
+              logoTexture.magFilter = THREE.LinearFilter;
+
+              const logoMeshMat = new THREE.MeshStandardMaterial({
+                map: logoTexture,
+                roughness: 0.4,
+                metalness: 0.05
+              });
+              const logoMesh = new THREE.Mesh(
+                new THREE.PlaneGeometry(logoW, logoH),
+                logoMeshMat
+              );
+              logoMesh.position.set(roomW - 0.07, logoY, logoZ);
+              logoMesh.rotation.y = -Math.PI / 2;
+              logoGroup.add(logoMesh);
+
+              // 4. Modern Architectural Gallery Sconce Light
+              const sconceMat = new THREE.MeshStandardMaterial({
+                color: 0x0f172a,
+                roughness: 0.5,
+                metalness: 0.5
+              });
+              const sconceBar = new THREE.Mesh(
+                new THREE.BoxGeometry(0.12, 0.06, logoW * 0.75),
+                sconceMat
+              );
+              sconceBar.position.set(roomW - 0.22, logoY + logoH / 2 + 0.25, logoZ);
+              logoGroup.add(sconceBar);
+
+              [-logoW * 0.25, logoW * 0.25].forEach((armZ) => {
+                const arm = new THREE.Mesh(
+                  new THREE.BoxGeometry(0.22, 0.04, 0.04),
+                  sconceMat
+                );
+                arm.position.set(roomW - 0.11, logoY + logoH / 2 + 0.25, logoZ + armZ);
+                logoGroup.add(arm);
+              });
+
+              // Soft Warm Gallery Accent Light
+              const logoAccentLight = new THREE.PointLight(0xfffaed, 0.6, 7.0);
+              logoAccentLight.position.set(roomW - 0.45, logoY + logoH / 2 + 0.22, logoZ);
+              logoGroup.add(logoAccentLight);
+
+              scene.add(logoGroup);
+
+              // =============================================================
               // VIRTUAL LIBRARIAN CONSULTATION DESK & PASTEL RED FLOATING ARROW
               // (Top-Right Zone: x = 18.0, z = 3.6, facing into library)
               // =============================================================
               const librarianInteractiveMeshes = [];
               const librarianGroup = new THREE.Group();
               librarianGroup.position.set(18.0, 0, 3.6);
-              librarianGroup.rotation.y = 0.5; // Angled facing South-West into the library room
+              librarianGroup.rotation.y = -Math.PI / 2; // Facing straight West (-X) towards the left wall & entrance
               librarianGroup.userData = { type: 'librarian' };
 
               // Consultation Desk Counter
@@ -1083,6 +1195,21 @@ export const Map3DView: React.FC<Map3DViewProps> = ({
               }
               animate();
 
+              window.addEventListener('message', (event) => {
+                try {
+                  const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+                  if (data && data.type === 'SELECT_SHELF') {
+                    const targetId = data.shelfId || null;
+                    Object.keys(bayMeshesMap).forEach(sId => {
+                      const mesh = bayMeshesMap[sId];
+                      if (mesh) {
+                        mesh.material.opacity = (targetId && sId === targetId) ? 0.35 : 0.0;
+                      }
+                    });
+                  }
+                } catch {}
+              });
+
               window.addEventListener('resize', () => {
                 updateCamera();
                 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -1092,7 +1219,7 @@ export const Map3DView: React.FC<Map3DViewProps> = ({
         </body>
       </html>
     `;
-  }, [layout, selectedShelfId]);
+  }, [layout]);
 
   if (!layout) {
     return (
@@ -1106,6 +1233,7 @@ export const Map3DView: React.FC<Map3DViewProps> = ({
     return (
       <View className="flex-1 w-full h-full bg-slate-100 overflow-hidden">
         <iframe
+          ref={iframeRef}
           srcDoc={htmlContent}
           style={{ width: '100%', height: '100%', border: 'none' }}
           title="3D Library Map"
@@ -1130,6 +1258,7 @@ export const Map3DView: React.FC<Map3DViewProps> = ({
   return (
     <View className="flex-1 bg-slate-100 overflow-hidden">
       <WebView
+        ref={webViewRef}
         originWhitelist={['*']}
         source={{ html: htmlContent }}
         onMessage={handleMessage}

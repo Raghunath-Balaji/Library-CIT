@@ -368,26 +368,70 @@ This log tracks every architectural and component design decision, the user requ
   - **Universal Re-Export (`CameraQRScanner.tsx`)**: Clean re-exporting shim ensuring Metro and TypeScript cleanly bundle the native camera for mobile and HTML5 video for web.
 - **Verification**: Verified via Babel parser (22 files scanned, 0 errors), TypeScript compiler (`npx tsc --noEmit`, 0 errors), and automated audit (0 emojis, 0 `StyleSheet.create`).
 
-### [2026-11-24] Resolution of Android Touch Responder Freeze & Persistent Tab Rendering
-- **Domain**: navigation, gesture responders, window focus
+### [2026-11-25] Firestore-Ready Two-Step Borrowing & Return Architecture with Book Custody & Audit Trail
+- **Domain**: full-stack (frontend, backend, architecture)
 - **Requirement**:
-  - Fix issue where `<TextInput>` accepted touches on Android, but no `<TouchableOpacity>` buttons (navbar, camera buttons, quick selectors, or loan action buttons) could be clicked.
+  - Eliminate auto-approval upon scanning: borrowing must forward a pending request to the Admin circulation desk for physical authorization.
+  - Implement strict 2-step returns: students initiate returns from Collections, which enter a pending return verification queue for Admin inspection and physical sign-off.
+  - Establish Firestore-ready JSON architecture:
+    - Primary Key `id` on each Book, with `currentOwner` ({ studentId, studentName, borrowedDate, dueDate, loanId }) tracking who currently holds it.
+    - Append-only `history` audit trail on each Book tracking lifetime owners, issue dates, due dates, returned dates, and desk staff signatures to prevent theft.
+    - Shared `activeRequests` collection modeling Firestore queryable queues for pending borrows and returns.
+    - User borrowing history tracking all lifetime books borrowed by a student.
 - **Files Touched / Created**:
-  - `frontend/src/screens/StudentMapScreen.tsx`
-  - `frontend/src/components/BottomNavBar.tsx`
-  - `frontend/src/components/CameraQRScanner.native.tsx`
-  - `frontend/src/screens/QRScannerScreen.tsx`
-  - `frontend/src/screens/ProfileScreen.tsx`
+  - `frontend/src/types/index.ts`
+  - `frontend/src/services/lendingService.ts`
+  - `frontend/src/services/api.ts`
+  - `frontend/src/screens/QRScannerScreen.native.tsx`
+  - `frontend/src/screens/QRScannerScreen.web.tsx`
   - `frontend/src/screens/CollectionsScreen.tsx`
+  - `frontend/src/screens/AdminCatalogScreen.tsx`
+  - `frontend/assets/data/books.json`
+  - `backend/app/models/schemas.py`
+  - `backend/app/api/endpoints.py`
+  - `backend/app/data/books.json`
   - `Agent Context/SystemDesign-Log.md`
 - **Solution & Architecture**:
-  - **Preserved Persistent Tab Hierarchy**: Replaced conditional unmounting `{currentTab === 'home' && <Map3DView />}` with persistent visibility toggles `style={{ flex: 1, display: currentTab === 'home' ? 'flex' : 'none' }}` across all 4 tab screens. This prevents Android OS's native `ViewRootImpl` focus from being destroyed when unmounting the 3D map's WebView, ensuring touch dispatch to subsequent tabs is never corrupted.
-  - **Universal Migration to `Pressable`**: Migrated all interactive buttons from legacy `TouchableOpacity` (which uses JS PanResponder susceptible to gesture cancellation inside ScrollViews under Fabric / New Architecture) to modern React Native `Pressable`. `Pressable` connects directly to native C++ pointer hit testing with `style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}`.
-  - **ScrollView Tap Persist Mode**: Updated `ScrollView` on `QRScannerScreen` to `keyboardShouldPersistTaps="always"`, ensuring touch events on action buttons and book chips are dispatched immediately without scroll responder interference.
-- **Verification**: Verified via Babel parser (22 files scanned, 0 errors), TypeScript compiler (`npx tsc --noEmit`, 0 errors), and automated scan confirming 0 emojis and 0 `StyleSheet.create` occurrences across all source files.
+  - Re-architected `lendingService.ts` to mirror Cloud Firestore collections (`books`, `activeRequests`, `loans`) 1:1.
+  - Built dual-queue Admin Desk Approvals (Pending Borrow Requests & Pending Return Verifications) in `AdminCatalogScreen.tsx`.
+  - Added dedicated Book Audit History modal in `AdminCatalogScreen.tsx` displaying the complete chronological borrower chain for any copy ID.
+  - Rebuilt `CollectionsScreen.tsx` into 3 sections: Active Loans, Desk Operations in Progress, and Borrowing History.
+- **Verification**: Verified via `npx tsc --noEmit` (0 errors), Python AST verification (0 errors), and automated audit (0 emojis, 0 `StyleSheet.create`).
 
+### [2026-11-25] LendingService Backwards-Compatibility Aliases & Stale HMR Cache Protection
+- **Domain**: frontend / services & types
+- **Requirement**:
+  - Fix `TypeError: _servicesLendingService.LendingService.getPendingRequests is not a function` occurring on web and during live Fast Refresh.
+  - Provide complete backward-compatible surface for `LendingService` methods and type signatures during the Firestore 2-step approval migration.
+- **Files Touched / Created**:
+  - `frontend/src/types/index.ts`
+  - `frontend/src/services/lendingService.ts`
+  - `Agent Context/SystemDesign-Log.md`
+- **Solution & Architecture**:
+  - Exported type aliases `LendingRequest = ActiveRequest` and `BillReceipt = StudentLoan` in `types/index.ts`.
+  - Added backward-compatible alias methods to `LendingManager`:
+    - `getPendingRequests()` -> proxies to `getPendingBorrowRequests()`
+    - `getAllRequests()` -> proxies to `getAllActiveRequests()`
+    - `getUserCollections()` -> proxies to user loans
+    - `submitLendingRequest()`, `approveLendingRequest()`, `declineLendingRequest()`, `returnBook()`
+- **Verification**: TypeScript check (`npx tsc --noEmit`) passes with 0 errors. Zero `StyleSheet.create` and zero emojis.
 
-
+### [2026-11-25] Custom 3D Wall Logo Plaque with Texture Mapping & Gallery Accent Downlight
+- **Domain**: frontend / 3D Visualization
+- **Requirement**:
+  - Add the user's custom screenshot logo (`Screenshot 2026-11-25 010431.png`) onto a wall in the Three.js 3D library scene.
+- **Files Touched / Created**:
+  - `frontend/assets/logo.png`
+  - `frontend/src/services/logoData.ts`
+  - `frontend/src/components/Map3DView.tsx`
+  - `Agent Context/SystemDesign-Log.md`
+- **Solution & Architecture**:
+  - Encoded `Screenshot 2026-11-25 010431.png` into a high-fidelity Base64 data URI in `logoData.ts` for instantaneous, zero-latency, cross-platform loading across Web `srcDoc` iframes and native Android/iOS WebViews.
+  - Positioned the logo on the **East Feature Wall** ($x = 21.94, y = 3.0, z = 3.8$), the premier open architectural alcove facing directly into the isometric camera with zero bookshelf obstruction.
+  - Preserved the image's native $327 \times 227$ aspect ratio ($1.44 : 1$) as a $3.2\text{m} \times 2.22\text{m}$ high-resolution texture mapped plane.
+  - Framed with an architectural dark slate backing plaque ($3.42\text{m} \times 2.44\text{m} \times 0.06\text{m}$) and beveled metallic inset rim.
+  - Mounted an architectural gallery sconce bar overhead with a dedicated warm point light ($0xfffaed$, $6.0\text{m}$ radius) washing down across the plaque surface.
+- **Verification**: TypeScript check (`npx tsc --noEmit`) passed with 0 errors. Zero `StyleSheet.create`, zero emojis.
 
 ### [2026-11-24] True Optical Gradient Frost, Lighting Calibration, Darker Pathway & Tonal Contrast Overhaul
 - **Domain**: 3D scene, frontend UI & styling
@@ -469,23 +513,154 @@ This log tracks every architectural and component design decision, the user requ
   - **Universal Re-Export (`CameraQRScanner.tsx`)**: Clean re-exporting shim ensuring Metro and TypeScript cleanly bundle the native camera for mobile and HTML5 video for web.
 - **Verification**: Verified via Babel parser (22 files scanned, 0 errors), TypeScript compiler (`npx tsc --noEmit`, 0 errors), and automated audit (0 emojis, 0 `StyleSheet.create`).
 
-### [2026-11-24] Resolution of Android Touch Responder Freeze & Persistent Tab Rendering
-- **Domain**: navigation, gesture responders, window focus
+### [2026-11-25] Firestore-Ready Two-Step Borrowing & Return Architecture with Book Custody & Audit Trail
+- **Domain**: full-stack (frontend, backend, architecture)
 - **Requirement**:
-  - Fix issue where `<TextInput>` accepted touches on Android, but no `<TouchableOpacity>` buttons (navbar, camera buttons, quick selectors, or loan action buttons) could be clicked.
+  - Eliminate auto-approval upon scanning: borrowing must forward a pending request to the Admin circulation desk for physical authorization.
+  - Implement strict 2-step returns: students initiate returns from Collections, which enter a pending return verification queue for Admin inspection and physical sign-off.
+  - Establish Firestore-ready JSON architecture:
+    - Primary Key `id` on each Book, with `currentOwner` ({ studentId, studentName, borrowedDate, dueDate, loanId }) tracking who currently holds it.
+    - Append-only `history` audit trail on each Book tracking lifetime owners, issue dates, due dates, returned dates, and desk staff signatures to prevent theft.
+    - Shared `activeRequests` collection modeling Firestore queryable queues for pending borrows and returns.
+    - User borrowing history tracking all lifetime books borrowed by a student.
 - **Files Touched / Created**:
-  - `frontend/src/screens/StudentMapScreen.tsx`
-  - `frontend/src/components/BottomNavBar.tsx`
-  - `frontend/src/components/CameraQRScanner.native.tsx`
-  - `frontend/src/screens/QRScannerScreen.tsx`
-  - `frontend/src/screens/ProfileScreen.tsx`
+  - `frontend/src/types/index.ts`
+  - `frontend/src/services/lendingService.ts`
+  - `frontend/src/services/api.ts`
+  - `frontend/src/screens/QRScannerScreen.native.tsx`
+  - `frontend/src/screens/QRScannerScreen.web.tsx`
   - `frontend/src/screens/CollectionsScreen.tsx`
+  - `frontend/src/screens/AdminCatalogScreen.tsx`
+  - `frontend/assets/data/books.json`
+  - `backend/app/models/schemas.py`
+  - `backend/app/api/endpoints.py`
+  - `backend/app/data/books.json`
   - `Agent Context/SystemDesign-Log.md`
 - **Solution & Architecture**:
-  - **Preserved Persistent Tab Hierarchy**: Replaced conditional unmounting `{currentTab === 'home' && <Map3DView />}` with persistent visibility toggles `style={{ flex: 1, display: currentTab === 'home' ? 'flex' : 'none' }}` across all 4 tab screens. This prevents Android OS's native `ViewRootImpl` focus from being destroyed when unmounting the 3D map's WebView, ensuring touch dispatch to subsequent tabs is never corrupted.
-  - **Universal Migration to `Pressable`**: Migrated all interactive buttons from legacy `TouchableOpacity` (which uses JS PanResponder susceptible to gesture cancellation inside ScrollViews under Fabric / New Architecture) to modern React Native `Pressable`. `Pressable` connects directly to native C++ pointer hit testing with `style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}`.
-  - **ScrollView Tap Persist Mode**: Updated `ScrollView` on `QRScannerScreen` to `keyboardShouldPersistTaps="always"`, ensuring touch events on action buttons and book chips are dispatched immediately without scroll responder interference.
-- **Verification**: Verified via Babel parser (22 files scanned, 0 errors), TypeScript compiler (`npx tsc --noEmit`, 0 errors), and automated scan confirming 0 emojis and 0 `StyleSheet.create` occurrences across all source files.
+  - Re-architected `lendingService.ts` to mirror Cloud Firestore collections (`books`, `activeRequests`, `loans`) 1:1.
+  - Built dual-queue Admin Desk Approvals (Pending Borrow Requests & Pending Return Verifications) in `AdminCatalogScreen.tsx`.
+  - Added dedicated Book Audit History modal in `AdminCatalogScreen.tsx` displaying the complete chronological borrower chain for any copy ID.
+  - Rebuilt `CollectionsScreen.tsx` into 3 sections: Active Loans, Desk Operations in Progress, and Borrowing History.
+- **Verification**: Verified via `npx tsc --noEmit` (0 errors), Python AST verification (0 errors), and automated audit (0 emojis, 0 `StyleSheet.create`).
+
+### [2026-11-25] LendingService Backwards-Compatibility Aliases & Stale HMR Cache Protection
+- **Domain**: frontend / services & types
+- **Requirement**:
+  - Fix `TypeError: _servicesLendingService.LendingService.getPendingRequests is not a function` occurring on web and during live Fast Refresh.
+  - Provide complete backward-compatible surface for `LendingService` methods and type signatures during the Firestore 2-step approval migration.
+- **Files Touched / Created**:
+  - `frontend/src/types/index.ts`
+  - `frontend/src/services/lendingService.ts`
+  - `Agent Context/SystemDesign-Log.md`
+- **Solution & Architecture**:
+  - Exported type aliases `LendingRequest = ActiveRequest` and `BillReceipt = StudentLoan` in `types/index.ts`.
+  - Added backward-compatible alias methods to `LendingManager`:
+    - `getPendingRequests()` -> proxies to `getPendingBorrowRequests()`
+    - `getAllRequests()` -> proxies to `getAllActiveRequests()`
+    - `getUserCollections()` -> proxies to user loans
+    - `submitLendingRequest()`, `approveLendingRequest()`, `declineLendingRequest()`, `returnBook()`
+- **Verification**: TypeScript check (`npx tsc --noEmit`) passes with 0 errors. Zero `StyleSheet.create` and zero emojis.
+
+### [2026-11-25] Custom 3D Wall Logo Plaque with Texture Mapping & Gallery Accent Downlight
+- **Domain**: frontend / 3D Visualization
+- **Requirement**:
+  - Add the user's custom screenshot logo (`Screenshot 2026-11-25 010431.png`) onto a wall in the Three.js 3D library scene.
+- **Files Touched / Created**:
+  - `frontend/assets/logo.png`
+  - `frontend/src/services/logoData.ts`
+  - `frontend/src/components/Map3DView.tsx`
+  - `Agent Context/SystemDesign-Log.md`
+- **Solution & Architecture**:
+  - Encoded `Screenshot 2026-11-25 010431.png` into a high-fidelity Base64 data URI in `logoData.ts` for instantaneous, zero-latency, cross-platform loading across Web `srcDoc` iframes and native Android/iOS WebViews.
+  - Positioned the logo on the **East Feature Wall** ($x = 21.94, y = 3.0, z = 3.8$), the premier open architectural alcove facing directly into the isometric camera with zero bookshelf obstruction.
+  - Preserved the image's native $327 \times 227$ aspect ratio ($1.44 : 1$) as a $3.2\text{m} \times 2.22\text{m}$ high-resolution texture mapped plane.
+  - Framed with an architectural dark slate backing plaque ($3.42\text{m} \times 2.44\text{m} \times 0.06\text{m}$) and beveled metallic inset rim.
+  - Mounted an architectural gallery sconce bar overhead with a dedicated warm point light ($0xfffaed$, $6.0\text{m}$ radius) washing down across the plaque surface.
+- **Verification**: TypeScript check (`npx tsc --noEmit`) passed with 0 errors. Zero `StyleSheet.create`, zero emojis.
+
+### [2026-11-26] Modular Async Repositories, Email/Password Auth, & Pre-Firebase Hardening
+- **Domain**: frontend / auth, services, utils, config, screens, 3D map
+- **Requirement**:
+  - Implement Email/Password authentication (`AuthScreen` + `AuthService`) compatible with Expo Go and Web before switching to Firebase JS SDK (deferring Google OAuth to Expo Development Builds).
+  - Refactor book and lending services into async Repository interfaces (`IBookRepository`, `ILendingRepository`, `IAuthRepository`) strictly inside the existing `User-Instructions.md` folder structure.
+  - Fix copy ID collision after deletions, replace hardcoded Profile stats with live metrics, and stop reloading the Three.js scene on shelf selection.
+- **Files Touched / Created**:
+  - `frontend/src/types/index.ts`
+  - `frontend/src/utils/bookId.ts` (new)
+  - `frontend/src/config/env.ts`
+  - `frontend/src/services/authService.ts` (new)
+  - `frontend/src/services/api.ts`
+  - `frontend/src/services/lendingService.ts`
+  - `frontend/src/screens/AuthScreen.tsx` (new)
+  - `frontend/App.tsx`
+  - `frontend/src/screens/AdminCatalogScreen.tsx`
+  - `frontend/src/screens/CollectionsScreen.tsx`
+  - `frontend/src/screens/ProfileScreen.tsx`
+  - `frontend/src/screens/QRScannerScreen.native.tsx`
+  - `frontend/src/screens/QRScannerScreen.web.tsx`
+  - `frontend/src/components/Map3DView.tsx`
+  - `Agent Context/SystemDesign-Log.md`
+- **Solution & Architecture**:
+  - Created `AuthService` mirroring Firebase Auth (`signInWithEmail`, `registerWithEmail`, `signOut`, `subscribe`) with seeded multi-student (`raghu@college.edu`, `ananya@college.edu`) and admin (`librarian@college.edu`) credentials plus full registration.
+  - Added `generateNextBookId()` in `src/utils/bookId.ts` with monotonic high-water marks so deleted copy IDs are never reused.
+  - Converted `LibraryApiService` and `LendingService` to async `Promise`-returning methods with authoritative `on_shelf` custody checks preventing race conditions.
+  - Updated `ProfileScreen` to show live account info and real loan counters, and updated `Map3DView` to highlight bays via `postMessage` / `injectJavaScript` without rebuilding the 3D scene.
+- **Verification**: `npx tsc --noEmit` (0 errors), executable regression suite passing all auth, CRUD/collision-guard, multi-user 2-step borrow/return, and search checks, plus automated audit across 26 files (0 emojis, 0 `StyleSheet.create`).
+
+### [2026-11-26] Firebase SDK Integration, Live Auth & Firestore Porting (`fbconfig.txt`)
+- **Domain**: frontend / config, services, metro, gitignore
+- **Requirement**:
+  - Wire the exact `firebaseConfig` from root `fbconfig.txt` into the application (`projectId: "library-5f8b2"`).
+  - Switch `AuthService`, `LibraryApiService`, and `LendingService` from local mock mode to live Firebase Email/Password Auth and Cloud Firestore without altering UI components.
+- **Files Touched / Created**:
+  - `frontend/package.json` (installed `firebase` `^13.4.0` and `@react-native-async-storage/async-storage` `2.2.0`)
+  - `frontend/metro.config.js` (added `.cjs` source extension while preserving package exports required by React Native 0.88.1)
+  - `frontend/src/config/firebase.ts` (new — `fbconfig.txt` constants + cross-platform `auth`, `db` with `experimentalAutoDetectLongPolling`, and Web-only `analyticsPromise`)
+  - `frontend/src/config/env.ts` (switched `DATA_PROVIDER` to `'firestore'`)
+  - `frontend/src/services/firestoreAdapter.ts` (new — `FirestoreBookRepository` with auto initial catalog seed + `FirestoreLendingRepository` with `onSnapshot` & atomic `runTransaction` lending workflows)
+  - `frontend/src/services/authService.ts` (added `FirebaseAuthManager` syncing Firebase Auth UID with Firestore `users/{uid}` profiles)
+  - `frontend/src/services/api.ts` & `frontend/src/services/lendingService.ts` (bound exports to `APP_CONFIG.DATA_PROVIDER`)
+  - `.gitignore` (ignored `fbconfig.txt`)
+  - `Agent Context/SystemDesign-Log.md`
+- **Verification**: `npx tsc --noEmit` passed with 0 errors; `npx expo export --platform web --platform android` compiled both Web (424 modules) and Android Hermes bytecode (1155 modules) with 0 errors; rules audit across 28 files verified 0 emojis and 0 `StyleSheet.create`.
+
+### [2026-11-26] Collections UI Overhaul: 2-Column Pastel Book Grid, Checkpoint Timeline, & Floating Island Detail Card
+- **Domain**: frontend / UI, components, utils
+- **Requirement**:
+  - Stack Collections vertically into two sections: Current Collections (top) in a 2-column homescreen-style icon grid, and chronological Borrowing Timeline (bottom).
+  - Rotate book icon colors across Pastel Red, Pastel Blue, and Pastel Green with the first letter printed on the cover, 25-char label truncation, and an overdue red day-count notification badge.
+  - Render timeline checkpoints along a vertical line: yellow dot for unreturned borrows, turning into a green tick when returned, paired with a grey tick checkpoint for the return event.
+  - Display a centered floating island modal with blurred/darkened 4-side backdrop containing small top-left book icon, 2-line bold title (no ellipsis), `Author • Category`, padded borderless description, inset divider, calendar + buying date + green/yellow/red timeline progress bar, and greyed-out Rupee fine receipt bill.
+- **Files Touched / Created**:
+  - `frontend/src/utils/dateUtils.ts` (new)
+  - `frontend/src/components/CollectionBookCardModal.tsx` (new)
+  - `frontend/src/screens/CollectionsScreen.tsx`
+  - `Agent Context/SystemDesign-Log.md`
+- **Verification**: `npx tsc --noEmit` passed with 0 errors; rules audit across 30 files verified 0 emojis and 0 `StyleSheet.create`.
+
+### [2026-11-26] QR Scanner Viewfinder, Bulk Checkout Bill Flow, & Pending Timer Icons
+- **Domain**: frontend / QR UI, Collections UI
+- **Requirement**:
+  - Replace the misplaced QR viewfinder + laser sweep with a centered, translucent light-blue square (`rounded-lg`, zero inner text, zero animation).
+  - Simplify scanned book bottom card: Shelf & Row top label (removing Copy ID and Book Verified badge), pastel book cover icon beside title/author/category, `"Borrow"` action button, and round two-arrow rescan button.
+  - Add bulk-checkout center receipt bill (`Chennai Institute of Technology - Library`) with live yellow-dot / green-tick / red-X rows, compact `"Once admin approves your request you can take your books"` + `+` bottom bar to scan additional books, and a payment-app pastel green checkmark animation summarizing allowed/rejected counts before redirecting to Collections.
+  - Render pending borrow books in the Collections 3-column grid as translucent grey book covers with a centered timer icon instead of the cover letter.
+- **Files Touched / Created**:
+  - `frontend/src/utils/dateUtils.ts`
+  - `frontend/src/components/CollectionBookCardModal.tsx`
+  - `frontend/src/components/BorrowBillOverlay.tsx` (new)
+  - `frontend/src/screens/CollectionsScreen.tsx`
+  - `frontend/src/screens/QRScannerScreen.native.tsx`
+  - `frontend/src/screens/QRScannerScreen.web.tsx`
+  - `Agent Context/SystemDesign-Log.md`
+- **Verification**: `npx tsc --noEmit` passed with 0 errors; rules audit across 31 files verified 0 emojis and 0 `StyleSheet.create`.
+
+
+
+
+
+
+
 
 
 

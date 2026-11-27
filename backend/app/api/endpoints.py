@@ -88,6 +88,10 @@ def update_book_status(book_id: str, payload: dict):
                 books[idx]["status"] = payload["status"]
             if "unavailableUntil" in payload:
                 books[idx]["unavailableUntil"] = payload["unavailableUntil"]
+            if "currentOwner" in payload:
+                books[idx]["currentOwner"] = payload["currentOwner"]
+            if "history" in payload:
+                books[idx]["history"] = payload["history"]
             write_json(BOOKS_FILE, books)
             return books[idx]
     raise HTTPException(status_code=404, detail="Book not found")

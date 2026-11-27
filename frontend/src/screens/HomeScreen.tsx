@@ -14,7 +14,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onSelectRole }) => {
   return (
     <View
       style={{ paddingTop: safeTopPadding, paddingBottom: safeBottomPadding }}
-      className="flex-1 bg-slate-100 justify-between p-6"
+      className="flex-1 bg-appBg justify-between p-6"
     >
       {/* App Branding */}
       <View className="items-center mt-12">

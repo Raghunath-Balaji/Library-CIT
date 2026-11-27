@@ -10,7 +10,8 @@ module.exports = {
       colors: {
         libraryDark: "#0f172a",
         libraryCard: "#1e293b",
-        libraryAccent: "#38bdf8"
+        libraryAccent: "#38bdf8",
+        appBg: "#e9f1f7"
       }
     },
   },

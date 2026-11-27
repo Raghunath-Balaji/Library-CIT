@@ -66,6 +66,7 @@ htmlcov/
 .env
 .env.*
 !.env.example
+fbconfig.txt
 *.pem
 *.key
 *.cert
@@ -115,3 +116,30 @@ scratch_*.js
 scratch_*.ts
 *.tmp
 *.temp
+
+*.p8
+*.p12
+*.mobileprovision
+*.orig.*
+*/.metro/
+*/metro-cache/
+.metro-health-check*
+
+# Python Virtual Environments (inside backend/ etc.)
+*/.venv/
+*/venv/
+
+# Firebase & Secrets
+*/.env
+*/.env.*
+*-firebase-adminsdk-*.json
+google-services.json
+GoogleService-Info.plist
+.firebase/
+firebase-debug.log*
+firestore-debug.log*
+ui-debug.log*
+
+# Scratch & Root Screenshots
+scratch_*
+Screenshot*.png

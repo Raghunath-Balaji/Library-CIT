@@ -23,8 +23,14 @@ export const QRCodeModal: React.FC<QRCodeModalProps> = ({ visible, book, onClose
 
   return (
     <Modal visible={visible} animationType="fade" transparent={true} onRequestClose={onClose}>
-      <View className="flex-1 items-center justify-center bg-black/50 p-6">
-        <View className="w-full max-w-sm bg-white border border-slate-300 rounded-3xl p-6 items-center shadow-2xl">
+      <Pressable
+        onPress={onClose}
+        className="flex-1 items-center justify-center bg-black/55 p-6"
+      >
+        <Pressable
+          onPress={(e) => e.stopPropagation()}
+          className="w-full max-w-sm bg-white border border-slate-200 rounded-xl p-6 items-center shadow-2xl"
+        >
           <View className="px-3 py-1 rounded-full bg-sky-50 border border-sky-200 mb-2">
             <Text className="text-[10px] font-bold text-sky-700 uppercase tracking-wider">
               Physical Shelf Label QR
@@ -70,12 +76,12 @@ export const QRCodeModal: React.FC<QRCodeModalProps> = ({ visible, book, onClose
 
           <Pressable
             onPress={onClose}
-            className="w-full py-3 bg-slate-900 rounded-xl items-center shadow-xs active:bg-slate-800"
+            className="w-full py-3 bg-slate-900 rounded-lg items-center shadow-xs active:bg-slate-800"
           >
             <Text className="text-xs font-bold text-white uppercase tracking-wider">Close Label</Text>
           </Pressable>
-        </View>
-      </View>
+        </Pressable>
+      </Pressable>
     </Modal>
   );
 };
